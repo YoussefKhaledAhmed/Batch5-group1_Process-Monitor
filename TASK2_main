@@ -1,0 +1,63 @@
+#! /usr/bin/bash -i
+
+########################################################
+# Name: Youssef Khaled Ahmed Zayed
+# Batch: 5_Hazem Khaled
+# Group: 1
+# file name: TASK2_main
+# file description: this file contains the main 
+#                   functionality of the task.
+# Date: 15/3/2024
+########################################################
+
+
+# reading the current directory path
+current_directory=$(readlink -f .)
+
+# replacing ' ' with "\ " to be able to source the file
+# ex.: ./Embedded Linux/... ---> ./Embedded\ Linux/...
+# processor monitoring functions
+processesMonitoringFuncsPath="${current_directory/\/\ /"\ "}/processesMonitoringFuncs"
+
+# path to the configuration file
+processMonitorConfig="${current_directory/\/\ /"\ "}/process_monitor.conf"
+
+# sourcing the file that holds the file organization functions.
+source "${processesMonitoringFuncsPath}"
+
+# sourcing the configuration file.
+source "${processMonitorConfig}"
+
+# Main loop
+operation_input=false
+while true; do
+    # Real time monitoring
+    realTimeMonitoring
+
+    # resource usage alert 
+    resourceUsageAlert "${CPU_ALERT_THRESHOLD}" "${MEMORY_ALERT_THRESHOLD}"
+
+    # Check if we're waiting for operation
+    # to be served.
+    if [ "$operation_input" = true ]; then
+      
+      # calling "presentOperations" function
+      presentOperations
+
+      # Reset flag after processing the 
+      # desired operation.
+      operation_input=false
+
+    fi
+
+    # Handle user input
+    printf "please enter (o) to show the script options (q) to quit:  "
+    read -t "${UPDATE_INTERVAL}" -rsn1 key
+    echo
+    case "$key" in
+        o)  # Set flag to wait for PID input
+            operation_input=true ;;
+        q)  # Quit the script
+            exit ;;
+    esac
+done

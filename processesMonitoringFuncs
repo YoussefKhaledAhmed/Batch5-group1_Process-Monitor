@@ -1,0 +1,390 @@
+#! /usr/bin/bash -i
+
+########################################################
+# Name: Youssef Khaled Ahmed Zayed
+# Batch: 5_Hazem Khaled
+# Group: 1
+# file name: processesMonitoringFuncs
+# file description: this file contains functions to
+#                   get information about the processes
+# Date: 15/3/2024
+########################################################
+
+
+
+# name: listRunningProcesses
+# description: this function lists all the running processes
+#              including: PIDs, name, CPU/Memory usage.
+# args: none
+# return: none
+function listRunningProcesses(){
+  # printing the header of the ps command but 
+  # with white background and black font.
+  echo -e "\e[47m \e[30m   PID COMMAND         %CPU   RSS \e[0m"  # Set white background, black font
+  
+  # calling -> ps <- command and printing
+  # the data execluding the header as it's
+  # typed above using -> echo <- command
+  # -e -> to list all the processes not that
+  #       related to this bash script(process)
+  # -o -> this is to allow you to specify the
+  #       format of the output, where in this 
+  #       case:
+  #         pid  -> process ID.
+  #         comm -> command name(program name).
+  #         pcpu -> percent CPU, this shows the
+  #                 percentage of the CPU time
+  #                 it used since it started.
+  #         rss  -> resident set size, this shows
+  #                 the amount of the physical 
+  #                 memory(RAM) a process is 
+  #                 actively using.
+  # awk -> it is a tool to display a specific
+  #        part of the command(ps) output.
+  # awk 'NR > 2':
+  #   NR -> it is built in variable in awk tool
+  #         that represents the -> line number <-
+  #   NR > 2 -> this will make the -> awk <- tool
+  #             shows from the second line of the 
+  #             -> ps <- command output, Hence the
+  #             header of ps -eo pid,... won't be 
+  #             shown.
+  ps -eo pid,comm,pcpu,rss | awk 'NR > 2'
+
+
+}
+
+# name: processInfo
+# description: this function lists information 
+#              about specific process, where 
+#              this info is about:
+#               1. PID
+#               2. name
+#               3. ppid(parent process ID)
+#               4. user(root or ...)
+#               5. CPU usage
+#               6. Memory usage
+# args: none
+# return: none
+function processInfo(){
+  
+  # local variable to store the process ID 
+  local PID
+
+  # local variable to hold the quit key to exit this 
+  # operation
+  local quitKey
+
+  # initializing the quitKey
+  quitKey='a'
+
+  # this -> read <- command reads the desired PID
+  # from the user and stores it in a variable named
+  # PID.
+  # -p -> this option is to specify a prompt that 
+  #       will be displayed to the user before 
+  #       waiting for his/her input.
+  # -r -> this option is to not interpret the 
+  #       backslash(\) as escape character.
+  read -rp "please enter the PID: " PID
+
+  # this command is to display the header of 
+  # -> ps <- command only as follows:
+  # PID  COMM  PPID USER  %CPU RSS
+  # ps -eo pid,comm,ppid,user,pcpu,rss | awk 'NR==1'
+  echo -e "\e[47m \e[30m   PID COMMAND            PPID USER     %CPU   RSS\e[0m"  # Set white background, black font
+
+
+  # this command to display the info of the desired 
+  # PID using -> grep <- tool.
+  ps -eo pid,comm,ppid,user,pcpu,rss | grep "${PID}"
+
+  # looping untill the user want to quit this operation
+  # by typing 'q'
+  while [ "${quitKey}" != 'q' ]; do
+    # requesting 'q' to exit this operation
+    printf "please enter (q) to quit:  "
+    # reading the input from the user
+    read -rsn1 quitKey
+    echo
+  done
+}
+
+
+# name: killProcess
+# description: this function askes the user 
+#              for the PID to kill.
+# args: none
+# return: none
+function killProcess(){
+
+  # local variable to store the process ID 
+  local kill_PID
+
+  # this -> read <- command reads the desired PID
+  # from the user and stores it in a variable named
+  # processID.
+  # -p -> this option is to specify a prompt that 
+  #       will be displayed to the user before 
+  #       waiting for his/her input.
+  # -r -> this option is to not interpret the 
+  #       backslash(\) as escape character.
+  read -rp "please enter PID to kill: " kill_PID
+
+  # killing the desired process.
+  kill "${kill_PID}"
+}
+
+# name: processStatistics
+# description: this function displays some info
+#              about CPU and memory.
+# args: none
+# return: none
+function processStatistics(){
+
+  # local variable to hold the quit key to exit this 
+  # operation
+  local quitKey
+
+  # initializing the quitKey
+  quitKey='a'
+
+  # this command displays some info regarding the CPU:
+  # us(user time), sy(system time), id(idle time), 
+  # wa(waiting for IO time)
+  # there are two commands can be used:
+  # 1. vmstat
+  echo "%Cpu(s): $(vmstat | awk 'NR > 2 {print "us: "$13 ", sy: " $14 ", id: " $15 ", wa: " $16}')"
+  
+  # 2. sar (slower than vmstat)
+  # echo "%Cpu(s): $(sar 1 1 | egrep -v 'user|Average|Linux|^$' | awk '{print $4 " us, " $6 " sy, " $5 " ni, " $9 " id, " $7 " wa, " $8 " st" }')"
+
+
+  # this command displays the free space of the RAM.
+  echo "mem: $(free -g | awk '/Mem/ {print $3}')"
+
+  # looping untill the user want to quit this operation
+  # by typing 'q'
+  while [ "${quitKey}" != 'q' ]; do
+    # requesting 'q' to exit this operation
+    printf "please enter (q) to quit:  "
+    # reading the input from the user
+    read -rsn1 quitKey
+    echo
+  done
+}
+
+# name: realTimeMonitoring
+# description: this function does 2 things
+#              1. clear the terminal
+#              2. display the processes info
+#                 by calling "listRunningProcesses"
+# args: none
+# return: none
+function realTimeMonitoring(){
+  # clearing the screen
+  clear
+
+  # -> listRunningProcesses <- this function is called to
+  # list information about the processes.
+  listRunningProcesses
+}
+
+# name: CPU_monitor
+# description: this function monitors the 
+#              Cpu by reading the idle time
+#              (the time where the cpu doesn't
+#               do anything) and calculating
+#              the percentage of the idle cpu time.
+# args: none
+# return: none
+function CPU_monitor(){
+
+  # local array to hold the cpu data(us, sy, id, wa).
+  local cpu_status_array
+
+  # local variable to hold the idle time of the cpu value.
+  local idelTime
+
+  # local variable to hold the cpu idle time
+  local totalCPUTime
+
+  # local variable to hold the idle cpu percentage
+  local idleCpuPercentage
+
+  # this to read the cpu time data including:
+  # us(user time), sy(system time), id(idle time), 
+  # wa(waiting for IO time) from the -> /proc/stat <-
+  # file and saving it in array format.
+  # where:
+  # head -n 1 -> this make the cat command read the 
+  #              first line of the "/proc/stat" file.
+  # awk '{ for (i=2;i<=NF;i++)  print $i }':
+  #   this loops over the read data and print each alone
+  #   to save them in the "cpu_status_array" variable.
+  # so, 
+  # cat /proc/stat:
+  #   cpu  230742 721 63512 1213643 65721 0 1868 0 0 0
+  #   cpu0 56408 174 15748 303646 16807 0 759 0 0 0
+  #   cpu1 59562 180 15910 302246 16344 0 203 0 0 0
+  #   cpu2 59205 176 15372 303697 15233 0 391 0 0 0
+  #   cpu3 55566 190 16481 304051 17336 0 514 0 0 0
+  #   ....
+  # head -n 1:
+  #   cpu  230742 721 63512 1213643 65721 0 1868 0 0 0
+  #     1st column : user = normal processes executing in user mode
+  #     2nd column : nice = niced processes executing in user mode
+  #     3rd column : system = processes executing in kernel mode
+  #     4th column : idle = twiddling thumbs(idle state)
+  #     5th column : iowait = waiting for I/O to complete
+  #     6th column : irq = servicing interrupts
+  #     7th column : softirq = servicing softirqs
+  # awk '{ for (i=2;i<=NF;i++)  print $i }':
+  #   230742 
+  #   721 
+  #   63512 
+  #   1213643 
+  #   65721 
+  #   0 
+  #   1868 
+  #   0 
+  #   0 
+  #   0
+  # where these values are stored in "cpu_status_array".
+  cpu_status_array=( $(cat /proc/stat | head -n 1 | awk '{ for (i=2;i<=NF;i++)  print $i }') )
+  
+  # this to get the value of the idle time.
+  idelTime=${cpu_status_array[3]}
+
+  # assingning totalCPUTime value to 0 to
+  # calculate it through the following loop.
+  totalCPUTime=0
+
+  # the criterion of calculating the idle percentage:
+  # - sum up all the columns in the 1st line "cpu" :
+  #   ( user + nice + system + idle + iowait + irq + softirq )
+  #   this will yield 100% of CPU time  
+  # - calculate the average percentage of total 'idle' 
+  #   average idle percentage X % = 
+  #    ( idle * 100 ) / ( user + nice + system + idle + iowait + irq + softirq )
+
+  # looping over the array to calculate the total time.
+  for CPU_value in "${cpu_status_array[@]}";do
+    # adding each value to the "totalCPUTime".
+    totalCPUTime=$(("${CPU_value}" + "${totalCPUTime}"))
+  done
+
+  # calculating the idle percentage using -> bc <- tool to get the 
+  # fraction number and 'scale=2' this means xx.xx.
+  idleCpuPercentage=$(echo "scale=2; (${idelTime} / ${totalCPUTime}) * 100" | bc)
+  
+  # printing the idle cpu time percentage.s
+  echo "${idleCpuPercentage}"
+}
+
+
+# name: resourceUsageAlert
+# description: this function compares the current 
+#              CPU and memory usage with the thresholds
+#              and if the current value exceeds the 
+#              thresold value then it will print a
+#              warning message telling the user that
+#              the CPU or the memory or both exceeds the 
+#              threshold value and also, printing the 
+#              current values.
+# args: 
+#  1. cpuThreshold
+#  2. memThreshold
+# return: none
+function resourceUsageAlert(){
+  
+  # local variable to hold the CPU usage threshold value.
+  cpuThreshold=$1
+  # local variable to hold the memory usage threshold value.
+  memThreshold=$2
+
+  # 1. CPU usage: 
+  #   here the criterion of calculating the CPU usage goes 
+  #   through two steps:
+  #     a. getting the cpu idle percentage.
+  #     b. getting the CPU usage percentage by subtracting 
+  #        the 100-(idle%).
+  #   to get the cpu Idle percentage we have many methods:
+  #     I. manually through "CPU_monitor" function implemented above.
+    cpuIdl=$(CPU_monitor)
+  #     II. mpstat command
+  # cpuIdl=$(mpstat 1 | awk 'NR==4 {print $13}')
+  
+  #     III. sar command
+  # cpuIdl=$(sar 1 1 | grep -E -v 'user|Average|Linux|^$' | awk '{print $9}')
+
+  #     IV. top command
+
+  
+  # calculating the non-idle cpu percentage.
+  nonIdlCpu=$(echo "scale=2; 100 - ${cpuIdl}" | bc)
+
+  # getting the mem usage
+  memUsage=$(($(free -g | awk '/Mem/ {print $3}')*100/$(free -g | awk '/Mem/ {print $2}')))
+
+  # checking whether the non-idle percentage exceeds the 
+  # threshold or not.
+  if [[ $(echo "scale=2; ${nonIdlCpu} >= ${cpuThreshold}" | bc) -eq 1 ]];then
+
+    # printing the warning message.
+    echo "cpu usage exceeds the limit"
+
+    # printing the current cpu load(i.e., non-idle cpu time percentage)
+    echo "cpu load: ${nonIdlCpu}"
+  fi
+
+  # checking whether the memory usage exceeds the 
+  # threshold or not.
+  if [ "${memUsage}" -ge "${memThreshold}" ];then
+
+    # printing the warning message.
+    echo "mem usage exceeds the limit"
+
+    # printing the current memory usage percentage.
+    printf "mem used: %d\n" "${memUsage}"
+  fi
+}
+
+# name: presentOperations
+# description: this function to get from the
+#              user which operation he/she wants.
+# args: none
+# return: none
+function presentOperations(){
+
+  # getting the user choice
+  select operation in "present process info" "kill process" "CPU/mem statistics"
+  do
+    case "${operation}" in 
+      # 1. if the user's choice is present process info
+      "present process info")
+        # calling the "processInfo" function.
+        processInfo
+        # breaking from the select loop
+        break
+        ;;
+
+      # 2. if the user's choice is to kill a process
+      "kill process")
+        # calling the "killProcess" function.
+        killProcess
+        # breaking from the select loop
+        break
+        ;;
+
+      # 3.if the user's choice is to get the CPU/mem 
+      #   statistics.
+      "CPU/mem statistics")
+        # calling the "processStatistics" function.
+        processStatistics
+        # breaking from the select loop
+        break
+        ;;
+      esac
+  done
+}
