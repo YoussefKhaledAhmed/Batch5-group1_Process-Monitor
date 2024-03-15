@@ -12,7 +12,7 @@
 
 
 # reading the current directory path
-current_directory=$(readlink -f .)
+current_directory=$(realpath "$(dirname "${BASH_SOURCE[0]}")")
 
 # replacing ' ' with "\ " to be able to source the file
 # ex.: ./Embedded Linux/... ---> ./Embedded\ Linux/...
